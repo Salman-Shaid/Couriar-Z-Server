@@ -105,8 +105,8 @@ async function run() {
         // Insert user data into the database
         const result = await usersCollection.insertOne({
           ...user,
-          deliveryManID, // Include the generated deliveryManID
-          timestamp: new Date().toLocaleString(), // Human-readable date
+          deliveryManID, 
+          timestamp: new Date().toLocaleString(),
         });
 
         res.send(result);
