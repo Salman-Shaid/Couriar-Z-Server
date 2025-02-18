@@ -5,9 +5,10 @@ const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
-
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 9000
 const app = express()
+
 // middleware
 const corsOptions = {
   origin: ['https://assignment12-fe277.web.app', 'https://assignment12-fe277.firebaseapp.com', 'http://localhost:5173', 'http://localhost:5174'],
@@ -15,6 +16,7 @@ const corsOptions = {
   optionSuccessStatus: 200,
 }
 app.use(cors(corsOptions))
+
 
 app.use(express.json())
 app.use(cookieParser())
@@ -40,6 +42,7 @@ const verifyToken = async (req, res, next) => {
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.csovo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -55,6 +58,9 @@ async function run() {
     const parcelCollection = db.collection('parcels')
     const reviewCollection = db.collection('reviews')
     const assignedParcelsCollection = db.collection('assign-parcel')
+    const paymentPerCollection = db.collection('payment')
+
+
     // verify admin middleware
     const verifyAdmin = async (req, res, next) => {
       console.log('data from verifyToken middleware--->', req.user?.email)
@@ -82,8 +88,77 @@ async function run() {
       next()
     }
 
+    // Payment 
+    app.post('/api/payments/create-payment-intent', async (req, res) => {
+      try {
+        const { amount, currency } = req.body;
 
-    
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount * 100, // Convert dollars to cents
+          currency: currency,
+        });
+
+        res.send({ clientSecret: paymentIntent.client_secret });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Payment initiation failed' });
+      }
+    });
+
+    app.post('/api/payments/save-payment', async (req, res) => {
+      const { parcelId, transactionId, amount, status } = req.body;
+
+      if (!parcelId || !transactionId || !amount || !status) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      try {
+        const paymentData = {
+          parcelId,
+          transactionId,
+          amount,
+          status,
+          date: new Date(),
+        };
+
+        const result = await paymentPerCollection.insertOne(paymentData);
+
+        res.json({ success: true, message: 'Payment saved successfully', data: result });
+      } catch (error) {
+        console.error('Error saving payment:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
+
+    // status update paid 
+    const { ObjectId } = require('mongodb');
+
+    app.patch('/api/parcels/:id', async (req, res) => {
+      try {
+        const { id } = req.params;
+        const filter = { _id: new ObjectId(id) }; // Ensure _id is converted to ObjectId
+        const updateDoc = { $set: { status: 'Paid' } };
+
+        const result = await parcelCollection.updateOne(filter, updateDoc);
+
+        if (result.modifiedCount === 0) {
+          return res.status(404).json({ message: "Parcel not found or status already updated." });
+        }
+
+        res.json({ message: "Parcel status updated to Paid", result });
+      } catch (error) {
+        console.error('Error updating parcel:', error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
+
+
+
+
+
+
+
+
     app.post('/users/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email };
@@ -105,7 +180,7 @@ async function run() {
         // Insert user data into the database
         const result = await usersCollection.insertOne({
           ...user,
-          deliveryManID, 
+          deliveryManID,
           timestamp: new Date().toLocaleString(),
         });
 
@@ -161,7 +236,7 @@ async function run() {
 
     })
 
-    
+
     app.get('/users/role/:email', async (req, res) => {
       const email = req.params.email
       const result = await usersCollection.findOne({ email })
@@ -425,8 +500,8 @@ async function run() {
     });
 
 
-    
-    
+
+
 
     // cancel the booking
 
@@ -595,7 +670,7 @@ async function run() {
 
 
     // deliveryman reviews
-    app.get('/reviews', verifyToken, verifyDeliveryMan, async  (req, res) => {
+    app.get('/reviews', verifyToken, verifyDeliveryMan, async (req, res) => {
       const { email } = req.query; // Extract email from query parameters
 
       if (!email) {
@@ -720,10 +795,10 @@ async function run() {
     });
 
 
-  
-    
+
+
   } finally {
-    
+
   }
 }
 run().catch(console.dir)
