@@ -384,18 +384,18 @@ async function run() {
           return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Log incoming request for debugging
+       
         console.log('Request received:', req.body);
 
         // Update the parcel in the database
         const result = await db.collection('parcels').updateOne(
-          { _id: new ObjectId(parcelID) }, // Find the parcel by its ID
+          { _id: new ObjectId(parcelID) },
           {
             $set: {
               deliveryManID,
               deliveryManEmail,
               approximateDeliveryDate,
-              updatedAt: new Date(), // Optionally, track the time of update
+              updatedAt: new Date(), 
             },
           }
         );
@@ -407,7 +407,7 @@ async function run() {
           return res.status(404).json({ error: 'Parcel not found or no change made' });
         }
       } catch (error) {
-        // Log the error to the console and send it as a response
+       
         console.error('Error updating parcel:', error);
         res.status(500).json({ error: 'Failed to update parcel', details: error.message });
       }
