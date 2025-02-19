@@ -490,11 +490,11 @@ async function run() {
     app.get('/parcels/:email', verifyToken, async (req, res) => {
       const email = req.params.email; // Extract email from route parameters
       try {
-        // Use 'senderEmail' to filter parcels based on the logged-in user's email
+    
         const parcels = await parcelCollection.find({ senderEmail: email }).toArray();
-        res.send(parcels); // Send the fetched parcels to the client
+        res.send(parcels);
       } catch (error) {
-        // Send an error response in case of a failure
+        
         res.status(500).send({ message: 'Error fetching parcels', error: error.message });
       }
     });
