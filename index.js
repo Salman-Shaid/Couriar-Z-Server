@@ -374,7 +374,7 @@ async function run() {
       }
     });
 
-
+    // update by parcel id 
     app.patch('/parcels/:id', async (req, res) => {
       const parcelID = req.params.id; // Retrieve the parcel ID from the URL
       const { deliveryManID, approximateDeliveryDate, deliveryManEmail } = req.body; // Extract the data from the request body
@@ -488,7 +488,7 @@ async function run() {
 
     // book data by user email
     app.get('/parcels/:email', verifyToken, async (req, res) => {
-      const email = req.params.email; // Extract email from route parameters
+      const email = req.params.email; 
       try {
     
         const parcels = await parcelCollection.find({ senderEmail: email }).toArray();
