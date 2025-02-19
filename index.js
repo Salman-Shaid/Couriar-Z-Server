@@ -11,7 +11,7 @@ const app = express()
 
 // middleware
 const corsOptions = {
-  origin: ['https://assignment12-fe277.web.app', 'https://assignment12-fe277.firebaseapp.com', 'http://localhost:5173', 'http://localhost:5174'],
+  origin: ['https://assignment12-fe277.web.app', 'https://assignment12-fe277.firebaseapp.com'],
   credentials: true,
   optionSuccessStatus: 200,
 }
@@ -771,28 +771,43 @@ async function run() {
     // admin stats
     app.get('/admin-stat', async (req, res) => {
       try {
-        // total users
-        const totalUsers = await usersCollection.estimatedDocumentCount();
-        // total bookings
-        const totalBookings = await parcelCollection.estimatedDocumentCount();
-        // total reviews
-        const totalReviews = await reviewCollection.estimatedDocumentCount();
-        const totalDelivery = await assignedParcelsCollection.estimatedDocumentCount();
-
-        res.status(200).send({
-          totalBookings,
-          totalUsers,
-          totalReviews,
-          totalDelivery,
-        });
+          // total users
+          const totalUsers = await usersCollection.estimatedDocumentCount();
+          // total bookings
+          const totalBookings = await parcelCollection.estimatedDocumentCount();
+          // total reviews
+          const totalReviews = await reviewCollection.estimatedDocumentCount();
+          // total deliveries
+          const totalDelivery = await assignedParcelsCollection.estimatedDocumentCount();
+          
+          // Calculate total payment amount
+          const paymentResult = await paymentPerCollection.aggregate([
+              {
+                  $group: {
+                      _id: null, 
+                      totalAmount: { $sum: "$amount" }  // Assuming 'amount' field stores payment value
+                  }
+              }
+          ]).toArray();
+  
+          const totalPayment = paymentResult.length > 0 ? paymentResult[0].totalAmount : 0;
+  
+          res.status(200).send({
+              totalBookings,
+              totalUsers,
+              totalReviews,
+              totalDelivery,
+              totalPayment,  // New field for total payment amount
+          });
       } catch (error) {
-        console.error("Error fetching admin statistics:", error);
-        res.status(500).send({
-          message: 'Error fetching admin statistics',
-          error: error.message
-        });
+          console.error("Error fetching admin statistics:", error);
+          res.status(500).send({
+              message: 'Error fetching admin statistics',
+              error: error.message
+          });
       }
-    });
+  });
+  
 
 
 
