@@ -94,7 +94,7 @@ async function run() {
         const { amount, currency } = req.body;
 
         const paymentIntent = await stripe.paymentIntents.create({
-          amount: amount * 100, // Convert dollars to cents
+          amount: amount * 100,
           currency: currency,
         });
 
@@ -165,16 +165,16 @@ async function run() {
       const user = req.body;
 
       try {
-        // Check if the user already exists in the database
+        
         const isExist = await usersCollection.findOne(query);
         if (isExist) {
           return res.send(isExist);
         }
 
-        // Generate a unique deliveryManID if the user's role is 'deliveryMan'
+    
         let deliveryManID = null;
         if (user.role === 'deliveryMan') {
-          deliveryManID = new ObjectId().toString(); // Generate a unique ID
+          deliveryManID = new ObjectId().toString();
         }
 
         // Insert user data into the database
@@ -376,8 +376,8 @@ async function run() {
 
     // update by parcel id 
     app.patch('/parcels/:id', async (req, res) => {
-      const parcelID = req.params.id; // Retrieve the parcel ID from the URL
-      const { deliveryManID, approximateDeliveryDate, deliveryManEmail } = req.body; // Extract the data from the request body
+      const parcelID = req.params.id; 
+      const { deliveryManID, approximateDeliveryDate, deliveryManEmail } = req.body; 
 
       try {
         if (!deliveryManID || !approximateDeliveryDate) {
